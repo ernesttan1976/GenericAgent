@@ -1,54 +1,84 @@
-# Subagent 调用 SOP
+# Subagent Invocation SOP
 
-## 文件IO协议
+This document describes conventions and best practices for launching and managing subagents (child agents) from a main agent.
 
-- 目录：`temp/{task_name}/`（cwd在temp/时即`./{task_name}/`）
-- 启动：`python agentmain.py --task {name} [--input "短文本"] [--bg] [--llm_no N]`（cwd=代码根）
-- `--input`自动建目录+清旧output+写input.txt；长文本先手动写input.txt再启动(不带--input)
-- 优先用`--bg`后台(print PID exit)，可同一code_run内sleep后poll；非--bg禁合并启动+轮询
-- subagent的cwd还是temp，不是task目录
-- input：目标+约束即可，subagent同等智能。**禁写步骤/过度描述**，大量数据给路径
-- 通信：output.txt(append,`[ROUND END]`=轮完成) → 写reply.txt继续 → 不写10min退出。reply后输出为output1/2/3.txt(同格式)
-- 干预文件：`_stop`(当轮结束退出) | `_keyinfo`(注入working memory) | `_intervene`(追加指令)
-- **主agent空闲时应读output观察进度，必要时用干预文件纠偏，禁止无脑长时间sleep轮询**
-- 监察模式启动时加`--verbose`，output将包含工具执行结果，主agent可直接审查原始数据而非仅信任摘要
+## File and working directory protocol
 
-## 场景1：测试模式 - 行为验证
-**用途**：观察agent真实行为，修正RULES/L2/L3/SOP
-**流程**：创建test_path/写input.txt→启动subagent→轮询output.txt(2秒间隔)→验证→清理重复
-**测试原则**：只给目标，不提示位置/不诱导做法，观察自主选择
-**修正闭环**：发现问题→设计测试→定位根源(RULES/L2/L3/SOP)→patch修正→验证
-**技术要点**：Insight优先级>SOP；subagent的cwd=temp/
-**两种测试**：
-- 测SOP质量：input指定SOP名（如"用ezgmail_sop查看最近3封未读邮件"），排除导航干扰，失败即SOP问题
-- 测导航能力：input只写目标，验证subagent能自主从insight找到正确SOP。禁止内联SOP内容
+- Each task runs in a temporary task directory: `temp/{task_name}/`.
+  - When the main `cwd` is `temp/`, the subagent should use `./{task_name}/` as its working directory.
+- Startup command (run from the repo root):
 
-## 场景2：Map模式 - 并行处理
-**用途**：将N个独立同构子任务分发给各自的subagent处理
-**核心优势**：独立上下文。避免处理文档A的长上下文污染处理文档B的质量
-**约束**：
-- 文件系统共享是优点：不同agent处理不同输入文件，产生不同输出文件
-- 共享资源冲突：键鼠不可共享；浏览器暂时不可并行使用，避免同时操作同一标签页
-- 不满足map模式的任务 → 主agent顺序执行即可，别用subagent
-**标准流程（map-reduce）**：
-1. 主agent准备阶段：爬取/dump数据，存为多个独立输入文件
-2. 分发：对每个文件启动一个subagent处理（主agent自己也可以处理其中一个）
-3. 收集：等所有subagent完成，主agent读取各输出文件，汇总结果
+```bash
+python agentmain.py --task {name} [--input "short input text"] [--bg] [--llm_no N]
+```
 
-## subagent内部plan_mode使用
-**原则**：subagent本身是完整agent，接收多步骤任务时应在内部创建plan管理执行
-**触发条件**:任务包含3个以上子步骤、子步骤之间有依赖关系、需要checkpoint来恢复执行
-**实现方式**：
-1. **主agent创建subagent时**：在input.txt中说明任务包含多个步骤，建议使用plan_mode
-2. **subagent内部执行**：检测到多步骤任务后，创建 `./subagent_plan.md` 并使用plan_mode执行
-3. **主agent监控**：只关注最终结果（output*.txt），不需要关心subagent内部如何执行
-4. **文件传递机制**：主agent创建subagent时在task_dir中生成 `context.json`，包含所有文件的**绝对路径**
-   **⚠ subagent启动后第一步必须读取context.json**
-   **⚠ 所有文件操作必须使用context.json中的绝对路径**
-**格式示例**：
+- `--input` flag will instruct the launcher to create the task directory, clear previous outputs, and write `input.txt`.
+  - For large inputs, the main agent should write `input.txt` manually and start the subagent without `--input`.
+- Prefer `--bg` (background) to start subagents so the launcher prints the PID and exit status; the main agent can then poll outputs. When not using `--bg`, avoid combining start + poll in the same command.
+- The subagent’s `cwd` must remain within `temp/`, never the main repo root.
+
+## I/O files and communication
+
+- Input files:
+  - `input.txt`: primary short text instruction (created by launcher when `--input` used)
+  - For longer structured inputs, the launcher should place files in the task dir and pass their absolute paths in `context.json`.
+- Output files:
+  - `output.txt`: the subagent appends progress outputs; batches are separated by `[ROUND END]` markers
+  - `reply.txt`: main agent can write to this to continue the conversation; subagent responds in `output1.txt`, `output2.txt`, ...
+- Intervention files:
+  - `_stop`: if present, the subagent should stop after the current round.
+  - `_keyinfo`: the main agent can inject working memory updates.
+  - `_intervene`: append ad-hoc instructions.
+- Timeout behavior: if `reply.txt` is not written within 10 minutes, the subagent should exit.
+
+## Monitoring and responsible behavior
+
+- The main agent should read the subagent’s `output.txt` periodically to observe real progress and avoid blind trust in summaries.
+- Use `_intervene` and `_keyinfo` to correct drift or inject constraints; do not rely on long polling without actionable interventions.
+- When running in verbose/monitoring mode, subagents may include raw tool execution logs in `output.txt`; the main agent should prefer raw logs over summaries for debugging.
+
+## Use cases
+
+1. Testing mode (behavior verification)
+
+Purpose: Observe the subagent’s raw behavior and validate that it follows rules.
+Flow:
+- Prepare `test_path/` and write `input.txt`.
+- Start the subagent.
+- Poll `output.txt` at short intervals (e.g., every 2s) and validate outputs.
+- Cleanup and iterate on failing scenarios.
+
+Testing constraints:
+- Only provide the goal and constraints, avoid suggesting steps or giving the subagent the exact SOP to use.
+- Tests should reveal whether the subagent can independently find and use the correct SOP.
+
+2. Map mode (parallel processing)
+
+Purpose: Distribute many independent, similar tasks across multiple subagents concurrently.
+Advantages: Isolated contexts reduce cross-task contamination.
+Constraints:
+- Use absolute file paths supplied in `context.json` for all file operations.
+- Avoid sharing interactive resources like keyboard/mouse or browser tabs.
+Process:
+1. Main agent prepares multiple input files.
+2. Launch a subagent per input.
+3. Wait for completion and collect outputs.
+
+3. Plan-mode inside a subagent
+
+Principle: Subagents are full agents. For tasks with multiple dependent steps, a subagent should internally create a `subagent_plan.md` and execute using plan-mode.
+When to use plan-mode:
+- Task contains 3+ steps, or requires checkpoints and recovery.
+How it’s done:
+1. The main agent indicates in `input.txt` that the task has multiple steps and recommends plan-mode.
+2. The subagent creates `./subagent_plan.md` and runs in plan-mode, updating the plan as it progresses.
+3. The main agent only needs to read the final `output*.txt` files; it does not inspect the internal plan unless debugging is needed.
+
+Context.json format example (main agent should create this file in the task directory):
+
 ```json
 {
-  "task": "任务描述",
+  "task": "task description",
   "work_dir": "/absolute/path/to/plan_dir/",
   "input_files": {
     "paper_info": "/absolute/path/to/paper_info.txt"
@@ -57,6 +87,8 @@
     "pdf": "/absolute/path/to/paper.pdf",
     "report": "/absolute/path/to/paper_report.md"
   },
-  "dependencies": ["paper_info.txt必须存在"]
+  "dependencies": ["paper_info.txt must exist"]
 }
 ```
+
+Important: On startup a subagent must read `context.json` first and then use the absolute paths listed for any file operations.

@@ -1,117 +1,194 @@
 # GitHub Contribution SOP
-**触发**：需要给开源项目提 PR（修 bug / 加功能 / 改文档）| **禁用**：仅读代码、不需要提交变更时
-**核心原则**：一个 PR 做一件事，测试通过才推，尊重项目规范
 
-## 前置准备（每个新项目首次执行）
-1. **读项目规范**（必须，不可跳过）
-   ```
-   file_read('CONTRIBUTING.md')  # 贡献指南
-   file_read('.github/PULL_REQUEST_TEMPLATE.md')  # PR 模板
-   file_read('.github/ISSUE_TEMPLATE/')  # Issue 模板
-   ```
-   没有就读 README 的 Contributing 部分。如果都没有，按本 SOP 默认流程。
+**When to use**: Whenever you plan to open a PR to an open source project (bugfix / feature / docs).
 
-2. **了解项目结构和测试方式**
-   ```
-   # 找测试命令
-   file_read('package.json')  # Node: scripts.test
-   file_read('Makefile')      # 或 Makefile
-   file_read('pyproject.toml') # Python: [tool.pytest] 等
-   ```
-   记下测试命令备用。跑不了测试的 PR = 未验证的 PR。
+**When NOT to use**: When you are only reading code and will not submit any change.
 
-3. **Fork + Clone**
+**Core principles**
+- One PR does one thing.
+- Tests must pass before pushing.
+- Respect the project’s conventions and maintainers.
+
+---
+## Initial setup for a new project (run once per project)
+
+1. **Read the project’s contribution rules (mandatory)**
+
+   Look for and read these files if they exist:
+
    ```
-   code_run('bash', 'gh repo fork OWNER/REPO --clone && cd REPO && git remote -v')
+   CONTRIBUTING.md                 # Contribution guide
+   .github/PULL_REQUEST_TEMPLATE.md  # PR template
+   .github/ISSUE_TEMPLATE/          # Issue templates directory
    ```
 
-## 工作流程（每个 PR）
+   If none of these exist, read the `Contributing` / `How to contribute` section in `README`. If there is still nothing, follow this SOP as the default.
 
-### Step 1: 确认目标
-- 读相关 Issue（如果有）
-- 一句话写清楚：改什么、为什么改
-- 检查：是否有人已在做？（看 Issue assignee、近期 PR）
+2. **Understand project structure and test commands**
 
-### Step 2: 创建分支
+   Find how to run tests (examples for common ecosystems):
+
+   ```
+   package.json      # Node: look at scripts.test
+   Makefile          # Make-based workflows
+   pyproject.toml    # Python: pytest / other test tools
+   ```
+
+   Write down the correct test command(s). A PR that cannot run tests locally is an unverified PR.
+
+3. **Fork and clone**
+
+   Typical flow using GitHub CLI (adjust OWNER/REPO):
+
+   ```bash
+   gh repo fork OWNER/REPO --clone
+   cd REPO
+   git remote -v
+   ```
+
+---
+## Standard workflow (for each PR)
+
+### Step 1: Clarify the goal
+- Read the related issue, if any.
+- Write a one-sentence description for yourself: what you are changing and why.
+- Check whether someone is already working on it (issue assignee, existing PRs).
+
+### Step 2: Create a branch
+
+Use a descriptive branch name:
+
+```bash
+# examples
+git checkout -b fix/issue-short-description
+# or
+git checkout -b feat/new-feature-name
+# or
+git checkout -b docs/update-readme
 ```
-code_run('bash', 'git checkout -b fix/issue-描述 && git status')
-```
-分支命名：`fix/xxx`（修 bug）、`feat/xxx`（新功能）、`docs/xxx`（文档）
 
-### Step 3: 实现变更
-- **最小化改动**：只改需要改的，不顺手重构无关代码
-- **遵循项目风格**：缩进、命名、注释风格跟现有代码保持一致
-- **每改一个逻辑点就提交一次**：
+Naming rules:
+- `fix/xxx` for bugfixes
+- `feat/xxx` for new features
+- `docs/xxx` for documentation-only changes
+
+### Step 3: Implement the change
+
+- **Keep the change set minimal**
+  - Only modify what is necessary for this issue / feature.
+  - Do not perform unrelated refactors or style cleanups in the same PR.
+
+- **Match existing style**
+  - Follow the project’s indentation, naming, comments, and file organization.
+
+- **Commit frequently, with meaningful messages**
+
+  ```bash
+  git add -A
+  git commit -m "fix: short, specific description"
   ```
-  code_run('bash', 'git add -A && git commit -m "fix: 简洁描述"')
-  ```
-- Commit message 格式：遵循项目规范（Conventional Commits / 项目自定义）
-  - 没有规范就用：`type: 简短描述`
-  - type: fix / feat / docs / refactor / test / chore
 
-### Step 4: 测试（不可跳过）
-```
-code_run('bash', '项目测试命令')  # npm test / pytest / go test ./...
-```
-**检查项**：
-- [ ] 所有现有测试通过？
-- [ ] 新功能有对应测试？（如果项目有测试习惯）
-- [ ] lint/type check 通过？（如果项目有）
+- **Commit message format**
+  - If the project defines a convention (e.g., Conventional Commits), follow it.
+  - If not, use `type: short description`.
+  - Common `type` values: `fix`, `feat`, `docs`, `refactor`, `test`, `chore`.
 
-**⛔ 测试不过不推代码。修到过为止。**
+### Step 4: Run tests (must not be skipped)
 
-### Step 5: 推送 + 提 PR
-```
-code_run('bash', 'git push origin HEAD')
-```
-PR 内容：
-- **标题**：`type: 简洁描述` 或按项目模板
-- **正文**必须包含：
-  - 改了什么（What）
-  - 为什么改（Why）— 关联 Issue 用 `Fixes #123`
-  - 怎么测的（Testing）
-- **不要写**：过度解释、无关背景、自夸
+Run the project’s test (and lint) commands, for example:
 
-### Step 6: CI 检查
-PR 提交后等 CI：
-- ✅ 全过 → 等 review
-- ❌ 有失败 → 看日志，修自己的问题
-  - CI 失败是 upstream 问题（跟你的改动无关）→ 在 PR 里说明
-  ```
-  code_run('bash', 'gh run view --log-failed')
-  ```
-
-### Step 7: 回应 Review
-- **reviewer 说改就改**，不要争论风格偏好
-- **不同意的技术决定**：礼貌说明理由，但最终尊重 maintainer
-- **改完后**：追加 commit + 测试 + push，不要 force push（除非 maintainer 要求 squash）
-- **reviewer 要求加测试** → 加，这不是可选项
-
-## 常见错误（避坑）
-
-| 错误 | 正确做法 |
-|------|----------|
-| 一个 PR 改多件事 | 拆成多个 PR，每个独立 |
-| 提了 PR 不跟进 | 每天检查 review 状态 |
-| 测试没跑就推 | Step 4 是硬门槛 |
-| 改了代码风格混乱 | 跟现有代码一致 |
-| commit message 写 "update" | 写具体改了什么 |
-| force push 覆盖 review 历史 | 追加 commit |
-| PR 描述空白 | 写 What/Why/Testing |
-
-## 跟进状态机
-
-```
-PR 提交 → 等 CI
-  CI ✅ → 等 Review
-    Review 通过 → 等 Merge ✅
-    Review 要改 → 改 + 测试 → 重回等 CI
-  CI ❌ → 修 → 重回等 CI
+```bash
+# examples, choose what matches the project
+npm test
+pnpm test
+yarn test
+pytest
+go test ./...
+# plus any lint / typecheck commands, e.g.
+npm run lint
+npm run typecheck
 ```
 
-每轮跟进用：
+Checklist before pushing:
+- [ ] All existing tests pass.
+- [ ] New functionality has tests, if the project normally has tests for such changes.
+- [ ] Linting and type checks pass, if applicable.
+
+If tests do not pass, **do not** push. Fix the issues and rerun tests until they pass.
+
+### Step 5: Push and open a PR
+
+Push the branch to your fork:
+
+```bash
+git push origin HEAD
 ```
-code_run('bash', 'gh pr status')
-code_run('bash', 'gh pr checks PR_NUMBER')
-code_run('bash', 'gh pr view PR_NUMBER --comments')
+
+When creating the PR:
+- **Title**
+  - Follow the project’s template if present, or use `type: short description`.
+- **Description** should clearly include:
+  - **What**: What you changed.
+  - **Why**: Why the change is needed. Link issues with `Fixes #123` / `Closes #123`.
+  - **How tested**: Which commands you ran and key scenarios covered.
+
+Avoid:
+- Overly long background stories that are not relevant to the change.
+- Self-promotion.
+
+### Step 6: CI checks
+
+After opening the PR, wait for CI results:
+
+- ✅ All checks green → ready for review.
+- ❌ Some checks failing → open the CI logs and diagnose.
+  - If the failure is clearly caused by your changes, fix and push updates.
+  - If CI is failing on `main` / for unrelated reasons, leave a short explanation in the PR (and optionally link to the failing workflow or upstream issue).
+
+If using GitHub CLI, you can inspect runs like:
+
+```bash
+gh run list
+gh run view --log-failed
 ```
+
+### Step 7: Respond to review
+
+- Treat reviewer feedback with respect.
+  - If a reviewer asks for changes that are style-related and consistent with the project, just apply them.
+- For technical disagreements:
+  - Politely explain your reasoning.
+  - Be prepared to accept the maintainer’s final decision.
+
+After you make changes requested in review:
+- Add new commits rather than force-pushing, unless maintainers explicitly ask for squashing or rebasing.
+- Rerun relevant tests locally before pushing.
+- If the reviewer requests additional tests, add them. Treat this as mandatory.
+
+---
+## Common mistakes and better alternatives
+
+| Mistake                                      | Better practice                                  |
+|---------------------------------------------|--------------------------------------------------|
+| One PR changes many unrelated things        | Split into several focused PRs                   |
+| Opening a PR and then ignoring feedback     | Check PR status regularly and respond promptly   |
+| Pushing without running tests               | Always complete Step 4 before pushing            |
+| Inconsistent coding style vs existing code  | Match the existing project style                 |
+| Vague commit messages like "update"        | Use specific messages describing the change      |
+| Force-pushing over reviewed history         | Prefer additional commits; squash only when asked|
+| Empty or unhelpful PR description           | Always describe What / Why / How tested          |
+
+---
+## Simple lifecycle / mental model
+
+Think of a PR’s life like this:
+
+1. Draft changes locally.
+2. Run tests and linters until they pass.
+3. Push and open a PR.
+4. Wait for CI.
+   - If CI fails → fix and repeat.
+5. Address reviewer comments.
+6. Wait for merge.
+
+During this process, use your usual tools (GitHub UI, GitHub CLI, etc.) to monitor PR status, checks, and comments.
