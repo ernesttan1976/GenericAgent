@@ -1564,7 +1564,10 @@ class ChatPanel(QWidget):
     def _check_backend(self, idx: int, backend):
         ok = False
         try:
-            reply = backend.ask("Hello", stream=False)
+            try:
+                reply = backend.ask("Hello", stream=False)
+            except TypeError:
+                reply = backend.ask("Hello")
             # 兼容生成器函数（NativeClaudeSession.ask是生成器）
             if hasattr(reply, '__iter__') and not isinstance(reply, str):
                 reply = ''.join(str(b) for b in reply if isinstance(b, str))
