@@ -123,7 +123,7 @@ class LauncherApp:
         self.output_text = tk.Text(
             self.output_frame, wrap='word', state='disabled',
             bg='#1e1e1e', fg='#d4d4d4',
-            font=('Consolas', 9), insertbackground='white')
+            font=('Courier New', 9), insertbackground='white')
         sb = ttk.Scrollbar(self.output_frame, command=self.output_text.yview)
         self.output_text.configure(yscrollcommand=sb.set)
         sb.pack(side='right', fill='y')

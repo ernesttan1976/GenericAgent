@@ -342,7 +342,7 @@ h2 { color: #f4f4f5; font-size: 17px; font-weight: 700; border-bottom: 1px solid
 h3 { color: #f4f4f5; font-size: 15px; font-weight: 600; margin-top: 12px; }
 h4,h5,h6 { color: #d4d4d8; font-size: 13px; font-weight: 600; margin-top: 10px; }
 code { background: rgba(63,63,70,0.6); color: #c4b5fd; padding: 1px 4px; border-radius: 3px;
-       font-family: Consolas, "Courier New", monospace; font-size: 12px; }
+       font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace; font-size: 12px; }
 pre  { background: rgba(24,24,30,0.95); border: 1px solid #3f3f46; border-radius: 6px;
        padding: 10px 12px; margin: 8px 0; }
 pre code { background: transparent; padding: 0; color: #d4d4d8; }
