@@ -122,10 +122,10 @@ def check():
         ts = now.strftime('%Y-%m-%d_%H%M')
         rpt = os.path.join(DONE, f'{ts}_{tid}.md')
         prompt = task.get('prompt', '')
-        return (f'[定时任务] {tid}\n'
-                f'[报告路径] {rpt}\n\n'
-                f'先读 scheduled_task_sop 了解执行流程，然后执行以下任务：\n\n'
+        return (f'[Scheduled Task] {tid}\n'
+                f'[Report Path] {rpt}\n\n'
+                f'First read scheduled_task_sop to understand the execution flow, then perform the following task:\n\n'
                 f'{prompt}\n\n'
-                f'完成后将执行报告写入 {rpt}。')
+                f'After completion, write the execution report to {rpt}.')
 
     return None

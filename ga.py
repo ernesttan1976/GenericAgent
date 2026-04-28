@@ -10,10 +10,10 @@ from agent_loop import BaseHandler, StepOutcome, json_default
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 def code_run(code, code_type="python", timeout=60, cwd=None, code_cwd=None, stop_signal=[]):
-    """代码执行器
-    python: 运行复杂的 .py 脚本（文件模式）
-    powershell/bash: 运行单行指令（命令模式）
-    优先使用python，仅在必要系统操作时使用powershell"""
+    """Code executor
+    python: run complex .py scripts (file mode)
+    powershell/bash: run single-line commands (command mode)
+    Prefer python; use shell only for necessary system operations."""
     preview = (code[:60].replace('\n', ' ') + '...') if len(code) > 60 else code.strip()
     yield f"[Action] Running {code_type} in {os.path.basename(cwd)}: {preview}\n"
     cwd = cwd or os.path.join(script_dir, 'temp'); tmp_path = None
@@ -29,7 +29,7 @@ def code_run(code, code_type="python", timeout=60, cwd=None, code_cwd=None, stop
         if os.name == 'nt': cmd = ["powershell", "-NoProfile", "-NonInteractive", "-Command", code]
         else: cmd = ["bash", "-c", code]
     else:
-        return {"status": "error", "msg": f"不支持的类型: {code_type}"}
+        return {"status": "error", "msg": f"Unsupported type: {code_type}"}
     print("code run output:") 
     startupinfo = None
     if os.name == 'nt':
@@ -62,8 +62,8 @@ def code_run(code, code_type="python", timeout=60, cwd=None, code_cwd=None, stop
             if istimeout or len(stop_signal) > 0:
                 process.kill()
                 print("[Debug] Process killed due to timeout or stop signal.")
-                if istimeout: full_stdout.append("\n[Timeout Error] 超时强制终止")
-                else: full_stdout.append("\n[Stopped] 用户强制终止")
+                if istimeout: full_stdout.append("\n[Timeout Error] process killed due to timeout")
+                else: full_stdout.append("\n[Stopped] process killed by user")
                 break
             time.sleep(1)
 
@@ -90,7 +90,7 @@ def code_run(code, code_type="python", timeout=60, cwd=None, code_cwd=None, stop
 
 
 def ask_user(question, candidates=None):
-    """question: 向用户提出的问题。candidates: 可选的候选项列表"""
+    """question: question to ask the human user. candidates: optional quick-select choices"""
     return {"status": "INTERRUPT", "intent": "HUMAN_INTERVENTION",
         "data": {"question": question, "candidates": candidates or []}}
 
@@ -178,7 +178,7 @@ def expand_file_refs(text, base_dir=None):
     def replacer(match):
         path, start, end = match.group(1), int(match.group(2)), int(match.group(3))
         path = os.path.abspath(os.path.join(base_dir or '.', path))
-        if not os.path.isfile(path): raise ValueError(f"引用文件不存在: {path}")
+        if not os.path.isfile(path): raise ValueError(f"Referenced file not found: {path}")
         with open(path, 'r', encoding='utf-8') as f: lines = f.readlines()
         if start < 1 or end > len(lines) or start > end: raise ValueError(f"行号越界: {path} 共{len(lines)}行, 请求{start}-{end}")
         return ''.join(lines[start-1:end])
@@ -188,12 +188,12 @@ def file_patch(path: str, old_content: str, new_content: str):
     """在文件中寻找唯一的 old_content 块并替换为 new_content"""
     path = str(Path(path).resolve())
     try:
-        if not os.path.exists(path): return {"status": "error", "msg": "文件不存在"}
+        if not os.path.exists(path): return {"status": "error", "msg": "File not found"}
         with open(path, 'r', encoding='utf-8') as f: full_text = f.read()
-        if not old_content: return {"status": "error", "msg": "old_content 为空，请确认 arguments"}
+        if not old_content: return {"status": "error", "msg": "old_content is empty; confirm arguments"}
         count = full_text.count(old_content)
-        if count == 0: return {"status": "error", "msg": "未找到匹配的旧文本块，建议：先用 file_read 确认当前内容，再分小段进行 patch。若多次失败则询问用户，严禁自行使用 overwrite 或代码替换。"}
-        if count > 1: return {"status": "error", "msg": f"找到 {count} 处匹配，无法确定唯一位置。请提供更长、更具体的旧文本块以确保唯一性。建议：包含上下文行来增强特征，或分小段逐个修改。"}
+        if count == 0: return {"status": "error", "msg": "Old content not found; please file_read to confirm current contents and try smaller/longer anchors. If repeated failures, ask the user. Do not use overwrite or bulk replace without confirmation."}
+        if count > 1: return {"status": "error", "msg": f"Found {count} matches; cannot determine a unique location. Provide a longer, specific old_content anchor (include surrounding context lines) or patch smaller sections."}
         updated_text = full_text.replace(old_content, new_content)
         with open(path, 'w', encoding='utf-8') as f: f.write(updated_text)
         return {"status": "success", "msg": "文件局部修改成功"}
@@ -357,7 +357,7 @@ class GenericAgentHandler(BaseHandler):
         new_content = args.get("new_content", "")
         try: new_content = expand_file_refs(new_content, base_dir=self.cwd)
         except ValueError as e:
-            yield f"[Status] ❌ 引用展开失败: {e}\n"
+            yield f"[Status] ❌ Reference expansion failed: {e}\n"
             return StepOutcome({"status": "error", "msg": str(e)}, next_prompt="\n")
         result = file_patch(path, old_content, new_content)
         yield f"\n{str(result)}\n"
@@ -381,7 +381,7 @@ class GenericAgentHandler(BaseHandler):
         
         blocks = extract_robust_content(response.content)
         if not blocks:
-            yield f"[Status] ❌ 失败: 未在回复中找到<file_content>代码块内容\n"
+            yield f"[Status] ❌ Failed: no <file_content> code block found in reply body.\n"
             return StepOutcome({"status": "error", "msg": "No content found. Put content inside <file_content>...</file_content> tags in your reply body before call file_write."}, next_prompt="\n")
         try:
             new_content = expand_file_refs(blocks, base_dir=self.cwd)
@@ -394,7 +394,7 @@ class GenericAgentHandler(BaseHandler):
             next_prompt = self._get_anchor_prompt(skip=args.get('_index', 0) > 0)
             return StepOutcome({"status": "success", 'writed_bytes': len(new_content)}, next_prompt=next_prompt)
         except Exception as e:
-            yield f"[Status] ❌ 写入异常: {str(e)}\n"
+            yield f"[Status] ❌ Write error: {str(e)}\n"
             return StepOutcome({"status": "error", "msg": str(e)}, next_prompt="\n")
         
     def do_file_read(self, args, response):
@@ -452,10 +452,10 @@ class GenericAgentHandler(BaseHandler):
         if 'max_tokens !!!]' in content[-100:]:
             return StepOutcome({}, next_prompt="[System] max_tokens limit reached. Use multi small steps to do it.")
         
-        if self._in_plan_mode() and any(kw in content for kw in ['任务完成', '全部完成', '已完成所有', '🏁']):
+        if self._in_plan_mode() and any(kw in content for kw in ['task complete', 'all done', 'completed', '🏁', '任务完成', '全部完成', '已完成所有']):
             if 'VERDICT' not in content and '[VERIFY]' not in content and '验证subagent' not in content:
-                yield "[Warn] Plan模式完成声明拦截。\n"
-                return StepOutcome({}, next_prompt="⛔ [验证拦截] 检测到你在plan模式下声称完成，但未执行[VERIFY]验证步骤。请先按plan_sop §四启动验证subagent，获得VERDICT后才能声称完成。")
+                yield "[Warn] Plan completion claim intercepted.\n"
+                return StepOutcome({}, next_prompt="⛔ [VERIFY INTERCEPT] Detected a claim of completion in plan mode but missing [VERIFY] validation step. Please follow plan_sop §4 to start verification subagent and obtain VERDICT before claiming completion.")
             
         # 2. 检测"包含较大代码块但未调用工具"的情况
         # 关键特征：恰好1个大代码块 + 代码块直接结尾（后面只有空白）
@@ -536,8 +536,8 @@ class GenericAgentHandler(BaseHandler):
         elif turn % 10 == 0: next_prompt += get_global_memory()
 
         if (_plan := self._in_plan_mode()) and turn >= 10 and turn % 5 == 0:
-            next_prompt = f"[Plan Hint] 你正在计划模式。必须 file_read({_plan}) 确认当前步骤，回复开头引用：📌 当前步骤：...\n\n" + next_prompt
-        if _plan and turn >= 90: next_prompt += f"\n\n[DANGER] Plan模式已运行 {turn} 轮，已达上限。必须 ask_user 汇报进度并确认是否继续。"
+            next_prompt = f"[Plan Hint] You are in plan mode. You must file_read({_plan}) to confirm the current step, then start your reply with: 📌 Current step: ...\n\n" + next_prompt
+        if _plan and turn >= 90: next_prompt += f"\n\n[DANGER] Plan mode has run {turn} turns and reached the limit. You must call ask_user to report progress and confirm whether to continue."
 
         injkeyinfo = consume_file(self.parent.task_dir, '_keyinfo')
         injprompt = consume_file(self.parent.task_dir, '_intervene')

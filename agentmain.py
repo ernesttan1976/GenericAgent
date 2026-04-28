@@ -1,5 +1,6 @@
-import os, sys, threading, queue, time, json, re, random, locale
-os.environ.setdefault('GA_LANG', 'zh' if any(k in (locale.getlocale()[0] or '').lower() for k in ('zh', 'chinese')) else 'en')
+import os, sys, threading, queue, time, json, re, random
+# Default UI/agent language: English. Set GA_LANG=zh in your environment to restore Chinese prompts.
+os.environ.setdefault('GA_LANG', 'en')
 if sys.stdout is None: sys.stdout = open(os.devnull, "w")
 elif hasattr(sys.stdout, 'reconfigure'): sys.stdout.reconfigure(errors='replace')
 if sys.stderr is None: sys.stderr = open(os.devnull, "w")

@@ -23,7 +23,7 @@ st.set_page_config(page_title="Cowork", layout="wide")
 def init():
     agent = GeneraticAgent()
     if agent.llmclient is None:
-        st.error("⚠️ 未配置任何可用的 LLM 接口，请设置mykey.py。")
+        st.error("⚠️ No available LLM interfaces configured. Please set up mykey.py.")
         st.stop()
     else: threading.Thread(target=agent.run, daemon=True).start()
     return agent
@@ -40,24 +40,24 @@ def render_sidebar():
     llm_options = agent.list_llms()
     current_idx = agent.llm_no
     llm_labels = {idx: f"{idx}: {(name or '').strip()}" for idx, name, _ in llm_options}
-    st.caption(f"LLM Core: {llm_labels.get(current_idx, str(current_idx))}", help="下拉切换备用链路")
-    selected_idx = st.selectbox("备用链路", [idx for idx, _, _ in llm_options], index=next((i for i, (idx, _, _) in enumerate(llm_options) if idx == current_idx), 0), format_func=llm_labels.get, label_visibility="collapsed", key="sidebar_llm_select")
+    st.caption(f"LLM Core: {llm_labels.get(current_idx, str(current_idx))}", help="Switch fallback LLM from the dropdown")
+    selected_idx = st.selectbox("Fallback route", [idx for idx, _, _ in llm_options], index=next((i for i, (idx, _, _) in enumerate(llm_options) if idx == current_idx), 0), format_func=llm_labels.get, label_visibility="collapsed", key="sidebar_llm_select")
     if selected_idx != current_idx:
         agent.next_llm(selected_idx); st.rerun(scope="fragment")
     last_reply_time = st.session_state.get('last_reply_time', 0)
     if last_reply_time > 0:
-        st.caption(f"空闲时间：{int(time.time()) - last_reply_time}秒", help="当超过30分钟未收到回复时，系统会自动任务")
-    if st.button("强行停止任务"):
-        agent.abort(); st.toast("已发送停止信号"); st.rerun()
-    if st.button("重新注入工具"):
+        st.caption(f"Idle time: {int(time.time()) - last_reply_time}s", help="If no reply for 30+ minutes the system may perform automated tasks")
+    if st.button("Force stop task"):
+        agent.abort(); st.toast("Stop signal sent"); st.rerun()
+    if st.button("Re-inject tools"):
         agent.llmclient.last_tools = ''
         try:
             hist_path = os.path.join(script_dir, '..', 'assets', 'tool_usable_history.json')
             with open(hist_path, 'r', encoding='utf-8') as f: tool_hist = json.load(f)
             agent.llmclient.backend.history.extend(tool_hist)
-            st.toast(f"已重新注入工具，追加了 {len(tool_hist)} 条示范记录")
-        except Exception as e: st.toast(f"注入工具示范失败: {e}")
-    if st.button("🐱 桌面宠物"):
+            st.toast(f"Re-injected tools; added {len(tool_hist)} demonstration entries")
+        except Exception as e: st.toast(f"Re-inject tools failed: {e}")
+    if st.button("🐱 Desktop pet"):
         kwargs = {'creationflags': 0x08} if sys.platform == 'win32' else {}
         pet_script = os.path.join(script_dir, 'desktop_pet_v2.pyw')
         if not os.path.exists(pet_script): pet_script = os.path.join(script_dir, 'desktop_pet.pyw')
@@ -72,26 +72,26 @@ def render_sidebar():
         def _pet_hook(ctx):
             parts = [f"Turn {ctx.get('turn','?')}"]
             if ctx.get('summary'): parts.append(ctx['summary'])
-            if ctx.get('exit_reason'): parts.append('任务已完成')
+            if ctx.get('exit_reason'): parts.append('task completed')
             _pet_req(f'msg={quote(chr(10).join(parts))}')
             if ctx.get('exit_reason'): _pet_req('state=idle')
         agent._turn_end_hooks['pet'] = _pet_hook
-        st.toast("桌面宠物已启动")
+        st.toast("Desktop pet started")
     
     st.divider()
-    if st.button("开始空闲自主行动"):
+    if st.button("Start autonomous idle actions"):
         st.session_state.last_reply_time = int(time.time()) - 1800
-        st.toast("已将上次回复时间设为1800秒前"); st.rerun()
+        st.toast("Set last reply time to 30 minutes ago"); st.rerun()
     if st.session_state.autonomous_enabled:
-        if st.button("⏸️ 禁止自主行动"):
+        if st.button("⏸️ Pause autonomous actions"):
             st.session_state.autonomous_enabled = False
-            st.toast("⏸️ 已禁止自主行动"); st.rerun()
-        st.caption("🟢 自主行动运行中，会在你离开它30分钟后自动进行")
+            st.toast("Autonomous actions paused"); st.rerun()
+        st.caption("🟢 Autonomous actions active: will trigger after 30 minutes idle")
     else:
-        if st.button("▶️ 允许自主行动", type="primary"):
+        if st.button("▶️ Allow autonomous actions", type="primary"):
             st.session_state.autonomous_enabled = True
-            st.toast("✅ 已允许自主行动"); st.rerun()
-        st.caption("🔴 自主行动已停止")
+            st.toast("Autonomous actions allowed"); st.rerun()
+        st.caption("🔴 Autonomous actions disabled")
 with st.sidebar: render_sidebar()
 
 def fold_turns(text):

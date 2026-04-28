@@ -662,14 +662,14 @@ ANTHROPIC_SELECTBOX_SCRIPT = """
 (function() {
     const hostWin = window.parent;
     const doc = hostWin.document;
-    const LABEL_TEXT = '备用链路';
+    const LABEL_TEXT = 'Fallback route';
     const EXTRA_WIDTH = 56;
     const TIMER_KEY = '__anthropicSelectboxFixedWidthTimer';
     const FONT_LABELS = {
-        '100': '标准（100%）',
-        '112.5': '偏大（112.5%）',
-        '125': '更大（125%）',
-        '137.5': '超大（137.5%）'
+        '100': 'Standard (100%)',
+        '112.5': 'Slightly larger (112.5%)',
+        '125': 'Larger (125%)',
+        '137.5': 'Extra large (137.5%)'
     };
 
     function measureTextWidth(text, sourceEl) {
@@ -801,7 +801,7 @@ ANTHROPIC_SELECTBOX_SCRIPT = """
 def init():
     agent = GeneraticAgent()
     if agent.llmclient is None:
-        st.error("⚠️ 未配置任何可用的 LLM 接口，请在 mykey.py 中添加 sider_cookie 或 oai_apikey+oai_apibase 等信息后重启。")
+        st.error("⚠️ No available LLM interfaces are configured. Please add sider_cookie or oai_apikey+oai_apibase to mykey.py and restart the app.")
         st.stop()
     else:
         threading.Thread(target=agent.run, daemon=True).start()
@@ -961,7 +961,7 @@ _embed_html(build_header_agent_badge_script(), height=0, width=0)
 st.session_state.agent_name = 'Generic Agent'
 with st.chat_message("assistant"):
     st.markdown(f'<div class="msg-timestamp">{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</div>', unsafe_allow_html=True)
-    st.write("欢迎使用GenericAgent~")
+    st.write("Welcome to GenericAgent~")
 
 
 @st.fragment
@@ -969,18 +969,18 @@ def render_sidebar():
     llm_options, current_idx = agent.list_llms(), agent.llm_no
     st.session_state.selected_llm_idx = current_idx
     llm_labels = {idx: f"{idx}: {(name or '').strip()}" for idx, name, _ in llm_options}
-    st.caption(f"当前使用的LLM为：{current_idx}: {agent.get_llm_name()}", help="可在下方选择链路")
+    st.caption(f"Current LLM: {current_idx}: {agent.get_llm_name()}", help="Select a fallback route below")
     st.markdown(f'<div data-testid="sidebar-llm-max-label" style="display:none">{html.escape(max(llm_labels.values(), key=len, default=""))}</div>', unsafe_allow_html=True)
-    selected_idx = st.selectbox("选择链路：", [idx for idx, _, _ in llm_options], index=next((i for i, (idx, _, _) in enumerate(llm_options) if idx == current_idx), 0), format_func=llm_labels.get, key="sidebar_llm_select")
+    selected_idx = st.selectbox("Select route:", [idx for idx, _, _ in llm_options], index=next((i for i, (idx, _, _) in enumerate(llm_options) if idx == current_idx), 0), format_func=llm_labels.get, key="sidebar_llm_select")
     if selected_idx != current_idx:
         agent.next_llm(selected_idx)
         st.session_state.selected_llm_idx = selected_idx
-        st.toast(f"已切换到备用链路：{llm_labels[selected_idx]}")
+        st.toast(f"Switched to fallback route: {llm_labels[selected_idx]}")
         st.rerun()
     st.divider()
-    if st.button("重新注入System Prompt"):
+    if st.button("Re-inject System Prompt"):
         agent.llmclient.last_tools = ''
-        st.toast("下次将重新注入System Prompt")
+        st.toast("System Prompt will be re-injected on next run")
 
 with st.sidebar: render_sidebar()
 
@@ -1030,8 +1030,8 @@ def render_streaming_area():
     if not st.session_state.streaming: return
     with st.container():
         st.markdown('<span class="stop-btn-anchor"></span>', unsafe_allow_html=True)
-        if st.button("⏹️ 停止生成", type="primary"):
-            agent.abort(); st.session_state.stopping = True; st.toast("已发送停止信号"); st.rerun()
+        if st.button("⏹️ Stop generation", type="primary"):
+            agent.abort(); st.session_state.stopping = True; st.toast("Stop signal sent"); st.rerun()
     reply_ts = st.session_state.reply_ts
     with st.empty().container():
         segments = _get_response_segments(st.session_state.partial_response)
@@ -1042,7 +1042,7 @@ def render_streaming_area():
 
 for msg in st.session_state.messages: render_message(msg["role"], msg["content"], ts=msg.get("time", ""), unsafe_allow_html=True)
 if st.session_state.streaming: render_streaming_area()
-if prompt := st.chat_input("请输入指令", disabled=st.session_state.streaming):
+if prompt := st.chat_input("Enter a command", disabled=st.session_state.streaming):
     st.session_state.messages.append({"role": "user", "content": prompt, "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
     start_agent_task(prompt)
     st.rerun()

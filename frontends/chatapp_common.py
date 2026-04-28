@@ -1,29 +1,29 @@
 import ast, asyncio, glob, json, os, queue as Q, re, socket, sys, time
 
 HELP_COMMANDS = (
-    ("/help", "显示帮助"),
-    ("/status", "查看状态"),
-    ("/stop", "停止当前任务"),
-    ("/new", "开启新对话并清空当前上下文"),
-    ("/restore", "恢复上次对话历史"),
-    ("/continue", "列出可恢复会话"),
-    ("/continue [n]", "恢复第 n 个会话"),
-    ("/llm", "查看当前模型列表"),
-    ("/llm [n]", "切换到第 n 个模型"),
+    ("/help", "Show help"),
+    ("/status", "Show status"),
+    ("/stop", "Stop current task"),
+    ("/new", "Start a new conversation and clear current context"),
+    ("/restore", "Restore last conversation history"),
+    ("/continue", "List restorable sessions"),
+    ("/continue [n]", "Restore the nth session"),
+    ("/llm", "Show available LLMs"),
+    ("/llm [n]", "Switch to LLM n"),
 )
 TELEGRAM_MENU_COMMANDS = (
-    ("help", "显示帮助"),
-    ("status", "查看状态"),
-    ("stop", "停止当前任务"),
-    ("new", "开启新对话并清空当前上下文"),
-    ("restore", "恢复上次对话历史"),
-    ("continue", "列出可恢复会话；/continue n 恢复第 n 个"),
-    ("llm", "查看模型列表；/llm n 切换到指定模型"),
+    ("help", "Show help"),
+    ("status", "Show status"),
+    ("stop", "Stop current task"),
+    ("new", "Start a new conversation and clear current context"),
+    ("restore", "Restore last conversation history"),
+    ("continue", "List restorable sessions; /continue n to restore nth"),
+    ("llm", "Show model list; /llm n to switch to the specified model"),
 )
 
 
 def build_help_text(commands=HELP_COMMANDS):
-    return "📖 命令列表:\n" + "\n".join(f"{cmd} - {desc}" for cmd, desc in commands)
+    return "📖 Command list:\n" + "\n".join(f"{cmd} - {desc}" for cmd, desc in commands)
 
 
 HELP_TEXT = build_help_text()
@@ -127,6 +127,7 @@ def _native_first_user_line(prompt_text):
         text = text[len(FILE_HINT):].lstrip()
     if "### 用户当前消息" in text:
         text = text.split("### 用户当前消息", 1)[-1].strip()
+    # NOTE: Keep this language-specific marker for backwards compatibility with external SOPs; replace by a language-neutral delimiter if you control both producer and consumer.
     return text
 
 
@@ -181,13 +182,13 @@ def _restore_native_history(content):
 def format_restore():
     files = _restore_log_files()
     if not files:
-        return None, "❌ 没有找到历史记录"
+        return None, "❌ No history found"
     latest = max(files, key=os.path.getmtime)
     with open(latest, "r", encoding="utf-8") as f:
         content = f.read()
     restored = _restore_text_pairs(content) or _restore_native_history(content)
     if not restored:
-        return None, "❌ 历史记录里没有可恢复内容"
+        return None, "❌ History contains no restorable content"
     count = sum(1 for line in restored if line.startswith("[USER]: "))
     return (restored, os.path.basename(latest), count), None
 
@@ -196,7 +197,7 @@ def build_done_text(raw_text):
     files = [p for p in extract_files(raw_text) if os.path.exists(p)]
     body = strip_files(clean_reply(raw_text))
     if files:
-        body = (body + "\n\n" if body else "") + "\n".join(f"生成文件: {p}" for p in files)
+        body = (body + "\n\n" if body else "") + "\n".join(f"Generated file: {p}" for p in files)
     return body or "..."
 
 

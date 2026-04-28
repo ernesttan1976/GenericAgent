@@ -25,8 +25,8 @@ class BaseHandler:
             return ret
         elif tool_name == 'bad_json': return StepOutcome(None, next_prompt=args.get('msg', 'bad_json'), should_exit=False)
         else:
-            yield f"未知工具: {tool_name}\n"
-            return StepOutcome(None, next_prompt=f"未知工具 {tool_name}", should_exit=False)
+            yield f"Unknown tool: {tool_name}\n"
+            return StepOutcome(None, next_prompt=f"Unknown tool {tool_name}", should_exit=False)
 
 def json_default(o): return list(o) if isinstance(o, set) else str(o)
 def exhaust(g):

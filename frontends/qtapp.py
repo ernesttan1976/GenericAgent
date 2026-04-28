@@ -1,8 +1,8 @@
 """
-桌面前端单文件版 – PySide6 聊天面板 + 悬浮按钮   thanks to GaoZhiCheng
-依赖: pip install PySide6
-可选: pip install markdown  (Markdown 渲染)
-用法: python frontends/qtapp.py 
+Desktop frontend single-file version – PySide6 chat panel + floating button   thanks to GaoZhiCheng
+Dependency: pip install PySide6
+Optional: pip install markdown  (Markdown rendering)
+Usage: python frontends/qtapp.py 
 """
 from __future__ import annotations
 
@@ -459,7 +459,7 @@ def _build_prompt_with_uploads(prompt: str, files: list) -> tuple:
         return prompt, prompt, []
 
     os.makedirs("temp/uploaded", exist_ok=True)
-    attachment_chunks = ["\n\n[用户上传附件 — 文件已保存到本地磁盘，可用 file_read 工具读取]"]
+    attachment_chunks = ["\n\n[User uploaded an attachment — file has been saved to local disk; use file_read tool to open it]"]
     display_attachments = []
     img_count, file_names = 0, []
 
@@ -476,12 +476,12 @@ def _build_prompt_with_uploads(prompt: str, files: list) -> tuple:
             with open(saved, "wb") as out:
                 out.write(raw)
         except Exception:
-            saved = "(保存失败)"
+            saved = "(save failed)"
 
         if mime.startswith("image/"):
             b64 = base64.b64encode(raw).decode()
             attachment_chunks.append(
-                f"\n- [图片附件] {name} ({size} bytes)\n  磁盘路径: {saved}"
+                f"\n- [Image attachment] {name} ({size} bytes)\n  Disk path: {saved}"
                 f"\n  data:{mime};base64,{b64}"
             )
             display_attachments.append({"type": "image", "name": name})
@@ -489,24 +489,24 @@ def _build_prompt_with_uploads(prompt: str, files: list) -> tuple:
         elif ext in TEXT_FILE_EXTS:
             text = raw.decode("utf-8", errors="replace")
             attachment_chunks.append(
-                f"\n--- 文本文件: {name} ({size} bytes) ---\n磁盘路径: {saved}\n{text[:MAX_INLINE_CHARS]}"
-                + ("\n[内容已截断，请用 file_read 读取完整内容]" if len(text) > MAX_INLINE_CHARS else "")
+                f"\n--- Text file: {name} ({size} bytes) ---\nDisk path: {saved}\n{text[:MAX_INLINE_CHARS]}"
+                + ("\n[Content truncated — use file_read to read the full file]" if len(text) > MAX_INLINE_CHARS else "")
             )
             display_attachments.append({"type": "file", "name": name})
             file_names.append(name)
         else:
             attachment_chunks.append(
-                f"\n- 文件: {name} ({size} bytes)\n  磁盘路径: {saved}"
+                f"\n- File: {name} ({size} bytes)\n  Disk path: {saved}"
             )
             display_attachments.append({"type": "file", "name": name})
             file_names.append(name)
 
     parts = []
     if img_count:
-        parts.append(f"{img_count} 张图片")
+        parts.append(f"{img_count} images")
     if file_names:
-        parts.append(f"{len(file_names)} 个文件（{'、'.join(file_names)}）")
-    display_prompt = f"{prompt}\n\n📎 已附带：{'，'.join(parts)}" if parts else prompt
+        parts.append(f"{len(file_names)} files ({', '.join(file_names)})")
+    display_prompt = f"{prompt}\n\n📎 Attached: {', '.join(parts)}" if parts else prompt
     return prompt + "\n".join(attachment_chunks), display_prompt, display_attachments
 
 
@@ -530,7 +530,7 @@ class _Badge(QLabel):
 
 class _StreamingBadge(QLabel):
     def __init__(self, parent=None):
-        super().__init__("处理中…", parent)
+        super().__init__("Processing…", parent)
         self.setStyleSheet(
             "QLabel { background: rgba(124,58,237,0.18); color: #c4b5fd;"
             " border: 1px solid rgba(124,58,237,0.35); border-radius: 9px;"
@@ -590,7 +590,7 @@ class _MsgRow(QWidget):
         right.setContentsMargins(0, 0, 0, 0)
         right.setSpacing(2)
 
-        role_lbl = QLabel("你" if is_user else "助手")
+        role_lbl = QLabel("You" if is_user else "Assistant")
         role_lbl.setStyleSheet(
             "color: #d4d4d8; font-size: 12px; font-weight: 700; background: transparent;"
         )
@@ -637,7 +637,7 @@ class _MsgRow(QWidget):
             copy_btn.setIconSize(icon_sz)
             copy_btn.setFixedSize(26, 24)
             copy_btn.setStyleSheet(self._ACTION_BTN)
-            copy_btn.setToolTip("复制")
+            copy_btn.setToolTip("Copy")
             copy_btn.setCursor(QCursor(Qt.PointingHandCursor))
             copy_btn.clicked.connect(self._copy_text)
             alayout.addWidget(copy_btn)
@@ -648,7 +648,7 @@ class _MsgRow(QWidget):
                 regen_btn.setIconSize(icon_sz)
                 regen_btn.setFixedSize(26, 24)
                 regen_btn.setStyleSheet(self._ACTION_BTN)
-                regen_btn.setToolTip("重新生成")
+                regen_btn.setToolTip("Regenerate")
                 regen_btn.setCursor(QCursor(Qt.PointingHandCursor))
                 regen_btn.clicked.connect(self._do_resend)
                 alayout.addWidget(regen_btn)
@@ -798,7 +798,7 @@ class ChatPanel(QWidget):
 
         # session state
         self._messages: list[dict] = []
-        self._session = {"id": _make_session_id(), "title": "新对话", "messages": []}
+        self._session = {"id": _make_session_id(), "title": "New conversation", "messages": []}
         self._history: list[dict] = _load_history()
         self._pending_files: list[dict] = []  # {'name','type','raw'}
         self._settings_health_checked = False
@@ -900,7 +900,7 @@ class ChatPanel(QWidget):
         sw_ly.setSpacing(6)
 
         self._search_input = QLineEdit()
-        self._search_input.setPlaceholderText("搜索当前对话和历史...")
+        self._search_input.setPlaceholderText("Search current conversation and history...")
         self._search_input.setFixedHeight(26)
         self._search_input.setStyleSheet(f"""
             QLineEdit {{
@@ -1145,9 +1145,9 @@ class ChatPanel(QWidget):
         """)
         for i, client in enumerate(self.agent.llmclients):
             try:
-                name = client.name or "未知"
+                name = client.name or "Unknown"
             except Exception:
-                name = "未知"
+                name = "Unknown"
             act = menu.addAction(f"{name}  #{i + 1}")
             act.triggered.connect(lambda _, idx=i: self._do_switch_to(idx))
         menu.exec(QCursor.pos())
@@ -1164,10 +1164,10 @@ class ChatPanel(QWidget):
 
         self._tabs: list[_TabButton] = []
         tab_defs = [
-            (_SVG_CHAT,  "对话"),
-            (_SVG_CLOCK, "历史"),
+            (_SVG_CHAT,  "Chat"),
+            (_SVG_CLOCK, "History"),
             (_SVG_BOOK,  "SOP"),
-            (_SVG_GEAR,  "设置"),
+            (_SVG_GEAR,  "Settings"),
         ]
         for i, (svg, text) in enumerate(tab_defs):
             btn = _TabButton(text)
@@ -1179,7 +1179,7 @@ class ChatPanel(QWidget):
 
         ly.addStretch()
 
-        new_btn = QPushButton("新对话")
+        new_btn = QPushButton("New conversation")
         new_btn.setIcon(_svg_icon("plus", _SVG_PLUS, "#a78bfa"))
         new_btn.setIconSize(QSize(12, 12))
         new_btn.setFixedHeight(27)
@@ -1277,7 +1277,7 @@ class ChatPanel(QWidget):
 
         self._input = QTextEdit()
         self._input.setFixedHeight(64)
-        self._input.setPlaceholderText("给助手发送消息... Enter发送，Shift+Enter换行")
+        self._input.setPlaceholderText("Send a message to the assistant... Enter=send, Shift+Enter=new line")
         self._input.setStyleSheet(f"""
             QTextEdit {{
                 background: transparent; color: {C['text']};
@@ -1296,7 +1296,7 @@ class ChatPanel(QWidget):
         attach.setIcon(_svg_icon("clip", _SVG_CLIP, "#a1a1aa"))
         attach.setIconSize(QSize(17, 17))
         attach.setFixedSize(30, 30)
-        attach.setToolTip("上传附件")
+        attach.setToolTip("Upload attachments")
         attach.setCursor(QCursor(Qt.PointingHandCursor))
         attach.setStyleSheet("""
             QPushButton { background: transparent; border: none; border-radius: 15px; }
@@ -1336,17 +1336,17 @@ class ChatPanel(QWidget):
         ly.setSpacing(8)
 
         header = QHBoxLayout()
-        lbl = QLabel("历史记录")
+        lbl = QLabel("History")
         lbl.setStyleSheet("color: #f4f4f5; font-weight: 600; font-size: 14px;")
         header.addWidget(lbl)
         header.addStretch()
 
-        restore_btn = QPushButton("恢复会话")
+        restore_btn = QPushButton("Restore session")
         restore_btn.setStyleSheet(self._small_btn_style(C["accent"]))
         restore_btn.clicked.connect(self._restore_selected)
         header.addWidget(restore_btn)
 
-        del_btn = QPushButton("删除")
+        del_btn = QPushButton("Delete")
         del_btn.setStyleSheet(self._small_btn_style("#dc2626"))
         del_btn.clicked.connect(self._delete_selected)
         header.addWidget(del_btn)
@@ -1416,16 +1416,16 @@ class ChatPanel(QWidget):
         ly.setContentsMargins(16, 16, 16, 16)
         ly.setSpacing(8)
 
-        lbl = QLabel("控制面板")
+        lbl = QLabel("Control panel")
         lbl.setStyleSheet("color: #f4f4f5; font-weight: 600; font-size: 14px;")
         ly.addWidget(lbl)
 
-        self._model_info = QLabel(f"当前模型：{self._model_name()} (#{self.agent.llm_no})")
+        self._model_info = QLabel(f"Current model: {self._model_name()} (#{self.agent.llm_no})")
         self._model_info.setStyleSheet(f"color: {C['muted']}; font-size: 12px;")
         ly.addWidget(self._model_info)
         ly.addSpacing(4)
 
-        model_hdr = QLabel("模型列表")
+        model_hdr = QLabel("Model list")
         model_hdr.setStyleSheet("color: #d4d4d8; font-weight: 600; font-size: 13px;")
         ly.addWidget(model_hdr)
 
@@ -1443,26 +1443,26 @@ class ChatPanel(QWidget):
         ly.addSpacing(6)
 
         for (lbl_text, color, handler, svg) in [
-            ("重置提示词", "#059669", self._do_reset_prompt,  _SVG_RESET),
-            ("保存当前会话","#0ea5e9", self._do_save,         _SVG_SAVE),
-            ("清空对话",   "#78716c", self._do_clear,         _SVG_TRASH),
+            ("Reset prompt", "#059669", self._do_reset_prompt,  _SVG_RESET),
+            ("Save current session","#0ea5e9", self._do_save,         _SVG_SAVE),
+            ("Clear conversation",   "#78716c", self._do_clear,         _SVG_TRASH),
         ]:
             b = _action_btn(lbl_text, color, _svg_icon(lbl_text, svg))
             b.clicked.connect(handler)
             ly.addWidget(b)
 
         ly.addSpacing(10)
-        sep = QLabel("自主行动")
+        sep = QLabel("Autonomous actions")
         sep.setStyleSheet("color: #f4f4f5; font-weight: 600; font-size: 13px;")
         ly.addWidget(sep)
 
-        self._auto_btn = _action_btn("开启自主行动 (idle > 30 min 自动触发)", "#f59e0b",
+        self._auto_btn = _action_btn("Enable autonomous actions (idle > 30 min triggers)", "#f59e0b",
                                       _svg_icon("bolt", _SVG_BOLT))
         self._auto_btn.setCheckable(True)
         self._auto_btn.clicked.connect(self._do_toggle_auto)
         ly.addWidget(self._auto_btn)
 
-        trigger_btn = _action_btn("立即触发一次", "#f59e0b",
+        trigger_btn = _action_btn("Trigger once now", "#f59e0b",
                                   _svg_icon("play", _SVG_PLAY))
         trigger_btn.clicked.connect(self._do_trigger_auto)
         ly.addWidget(trigger_btn)
@@ -1537,7 +1537,7 @@ class ChatPanel(QWidget):
         self.agent.next_llm(n=idx)
         name = self._model_name()
         self._model_badge.setText(name)
-        self._model_info.setText(f"当前模型：{name} (#{self.agent.llm_no})")
+        self._model_info.setText(f"Current model: {name} (#{self.agent.llm_no})")
         self._add_system_notice(f"已切换至 {name}，对话上下文已保留")
         self._refresh_model_rows_style()
 
@@ -1564,7 +1564,7 @@ class ChatPanel(QWidget):
     def _check_backend(self, idx: int, backend):
         ok = False
         try:
-            reply = backend.ask("你好", stream=False)
+            reply = backend.ask("Hello", stream=False)
             # 兼容生成器函数（NativeClaudeSession.ask是生成器）
             if hasattr(reply, '__iter__') and not isinstance(reply, str):
                 reply = ''.join(str(b) for b in reply if isinstance(b, str))
@@ -1680,7 +1680,7 @@ class ChatPanel(QWidget):
         if not text and not files:
             return
 
-        prompt = text or "请分析我上传的附件。"
+        prompt = text or "Please analyze the attachment I uploaded."
         full_prompt, display_prompt, _ = _build_prompt_with_uploads(prompt, files)
 
         # Clear input state
@@ -1689,7 +1689,7 @@ class ChatPanel(QWidget):
         self._refresh_chips()
 
         # Update session title
-        if self._session["title"] == "新对话" and prompt:
+        if self._session["title"] == "New conversation" and prompt:
             self._session["title"] = prompt[:20] + ("..." if len(prompt) > 20 else "")
 
         self._add_msg_row("user", display_prompt)
@@ -1876,7 +1876,7 @@ class ChatPanel(QWidget):
         self._set_send_mode()
         self._streaming_badge.hide()
         if self._streaming_row:
-            self._streaming_row.set_text(self._streaming_text or "（已停止）")
+            self._streaming_row.set_text(self._streaming_text or "(stopped)")
             self._streaming_row.set_finished(True)
             self._streaming_row = None
         self._update_token_usage()
@@ -1890,7 +1890,7 @@ class ChatPanel(QWidget):
     def _auto_save(self):
         if not self._messages:
             return
-        if self._session.get("title") == "新对话":
+        if self._session.get("title") == "New conversation":
             first_user = next(
                 (m["content"] for m in self._messages if m["role"] == "user"), ""
             )
@@ -1914,7 +1914,7 @@ class ChatPanel(QWidget):
 
     def _do_clear(self):
         self._messages.clear()
-        self._session = {"id": _make_session_id(), "title": "新对话", "messages": []}
+        self._session = {"id": _make_session_id(), "title": "New conversation", "messages": []}
         self._rebuild_messages()
         self._switch_tab(0)
         self._update_token_usage()
@@ -1927,7 +1927,7 @@ class ChatPanel(QWidget):
     def _do_toggle_auto(self):
         self.autonomous_enabled = not self.autonomous_enabled
         self._auto_btn.setChecked(self.autonomous_enabled)
-        lbl = "暂停自主行动" if self.autonomous_enabled else "开启自主行动 (idle > 30 min 自动触发)"
+        lbl = "Pause autonomous actions" if self.autonomous_enabled else "Enable autonomous actions (idle > 30 min triggers)"
         self._auto_btn.setText(lbl)
 
     def _do_trigger_auto(self):
@@ -1973,8 +1973,8 @@ def main():
     if agent.llmclient is None:
         QMessageBox.critical(
             None,
-            "未配置 LLM",
-            "未在 mykey.py 中发现任何可用的 LLM 接口配置，\n程序将在无 LLM 模式下运行。",
+            "No configured LLM",
+            "No available LLM interfaces found in mykey.py. The app will run without LLM functionality.",
         )
     else:
         threading.Thread(target=agent.run, daemon=True).start()
