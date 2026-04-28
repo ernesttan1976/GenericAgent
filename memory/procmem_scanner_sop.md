@@ -1,36 +1,42 @@
 # Memory Scanner SOP
 
-## 1. 快速开始
-内存特征搜索工具，支持 Hex (CE 风格) 和 字符串匹配。特别提供 LLM 模式，方便大模型分析内存上下文。
+## 1. Quick Start
 
-**Python 调用方式:**
+Memory pattern search tool that supports Hex (Cheat Engine-style) and string matching. It also provides an LLM mode for convenient analysis of memory context.
+
+**Python usage:**
+
 ```python
 import sys
-sys.path.append('../memory') # 直接挂载工具目录
+sys.path.append('../memory')  # Mount tools directory directly
 from procmem_scanner import scan_memory
 
-# 示例：搜索特定 Hex 特征码，开启 llm_mode 以获取上下文
+# Example: search for a specific hex signature with llm_mode enabled to get context
 results = scan_memory(pid, "48 8b ?? ?? 00", mode="hex", llm_mode=True)
 ```
 
 **CLI:**
+
 ```powershell
-# 基础搜索
+# Basic search
 python ../memory/procmem_scanner.py <PID> "pattern" --mode string
 
-# LLM 增强模式（输出包含上下文的 JSON，推荐）
+# LLM-enhanced mode (outputs JSON with context, recommended)
 python ../memory/procmem_scanner.py <PID> "pattern" --llm
 ```
 
-## 2. 典型场景：结构体或关键数据定位
-1. 确定目标数据的前导特征或已知常量（如特定的 Header 或 Magic Number）。
-2. 在目标进程中搜索该特征：
-   `scan_memory(pid, "4D 5A 90 00", mode="hex", llm_mode=True)`
-3. 分析返回的 JSON 中 `context` 字段，查看目标地址前后的原始字节及 ASCII 预览。
+## 2. Typical Scenario: Locating Structs or Critical Data
 
-## 3. 注意事项
-- **权限**: 并非强制要求管理员权限，但需具备对目标进程的 `PROCESS_QUERY_INFORMATION` 和 `PROCESS_VM_READ` 权限。
-- **效率**: 搜索大块内存时，尽量提供更唯一的特征码以减少误报。
+1. Determine leading features or known constants for the target data (e.g. a specific header or magic number).
+2. Search for this feature in the target process:
+   `scan_memory(pid, "4D 5A 90 00", mode="hex", llm_mode=True)`.
+3. Analyze the `context` field in the returned JSON to inspect raw bytes and ASCII preview before and after the target address.
 
-## 4. CE式差集扫描定位动态字段
-定位微信等自绘UI中随操作变化的内存字段（如当前会话标题）。核心：一次全量scan + 多次ReadProcessMemory筛选。
+## 3. Notes
+
+- **Permissions**: Administrator privileges are not strictly required, but you must have `PROCESS_QUERY_INFORMATION` and `PROCESS_VM_READ` rights for the target process.
+- **Efficiency**: When scanning large memory regions, use more unique signatures to reduce false positives.
+
+## 4. CE-style Differential Scan to Locate Dynamic Fields
+
+Used for locating memory fields that change with actions in custom-drawn UIs like WeChat (e.g. current session title). Core idea: one full scan + multiple `ReadProcessMemory` passes to filter candidates.

@@ -1,37 +1,45 @@
-# 记忆整理 SOP
+# Memory Cleanup SOP
 
-## 核心原则：存在性编码
-LLM自身是压缩器+解码器。L1只需让它**意识到某类知识存在**，它就能通过tool call自行取用深层内容。
+## Core Principle: Existence Encoding
 
-**L1本质：用最短词数表达——什么场景下有什么记忆可用（存在性）。**
+LLMs act as compressors and decompressors. L1 only needs to make the model **aware that a class of knowledge exists**; then it can use tool calls to retrieve deep content when needed.
 
-L1两类内容，统一ROI评估：
-- **存在性指针**：指向L2/L3知识的最短触发词
-- **行为规则**：不提醒就会犯的错（致命/高频均可，只要ROI过门槛）
+**Essence of L1:** express, in the fewest tokens, **what kinds of memories exist for which scenarios** (existence).
 
-ROI = (不放这几个词的犯错概率 × 代价) / 每轮词数成本
+Two types of L1 content, both evaluated by ROI:
+- **Existence pointers**: shortest trigger phrases pointing to L2/L3 knowledge.
+- **Behavior rules**: mistakes that would be made without reminders (either critical or frequent, as long as ROI passes the threshold).
 
-## 快速判断
-**该留**：反直觉触发词——没提示就想不到去查SOP的场景词。如`tmwebdriver_sop(httponly cookie)`：没有`httponly cookie`这个词，你不会想到取cookie要查tmwebdriver
-**该删**：
-- 名字翻译：`proxy-pool/(代理池)` → 名字自解释，括号是废词，直接`proxy-pool`即可
-- 内容描述：`opencli_sop(66站点CLI,复用Chrome session)` → 实现细节属于SOP内部，不是触发场景
-- 直觉能力：不提醒也能想到 → 0收益，白交每轮成本
-- 冗余：L3已覆盖的规则 / L1其他行已含的片段
+ROI = (probability of error without these tokens × cost of that error) / token cost per turn.
 
-## 压缩四原则
-1. **命名自解释 > 加描述**：SOP名能说清的，L1不加注释；改名的ROI常高于改L1
-2. **存在性集合最小描述**：多个相近条目若可被同一上位场景覆盖，用集合名表达这类能力的存在，不必平铺子项。如`qq操作/飞书操作/企微操作`→`im操作:*_im_sop`；子项名自解释则只列名不翻译
-3. **条目 = 场景↔方案存在性**：如`视频理解:yt-dlp取字幕`、`fofa(资产测绘)`——场景名是触发词，方案名编码存在性；括号内**只放反直觉触发词**，非反直觉的（纯翻译/内容描述/实现细节）全是浪费
-4. **分层归位**：带行为规则或高频高ROI的条目放上方场景行，纯存在性指针归L2/L3平铺列表
+## Quick Judgement
 
-## 整理流程
-1. 逐行读L1，按`|`拆片段，先分类：存在性指针 / RULES / 翻译 / 内容描述 / 实现细节 / 冗余
-2. 先清RULES：逐条问“这是全局高ROI，还是特定场景低危险规则？”
-   - 全局高ROI → 留
-   - 特定场景 / 低危险 → 降级到L3或删除
-3. 再清存在性指针：检查是否在表达**场景↔方案存在性**；场景触发词只在**反直觉**时才加，翻译/内容描述/实现细节删掉
-4. 检查L3文件名是否自解释；能靠改名解决的，不靠L1加描述；最后验证总行数 ≤ 30
+**Keep**: counterintuitive trigger phrases — scenario keywords where you wouldn’t think to check an SOP without the prompt. Example: `tmwebdriver_sop(httponly cookie)`: without the phrase `httponly cookie`, you would not think to check `tmwebdriver_sop` when you need to fetch cookies.
 
-**红线**：记忆修改是持久性伤害，错误每轮复利。L1只能patch词级别修改，禁overwrite
-产生误导应及时修正L1或记忆更名
+**Delete**:
+- Name translations: `proxy-pool/(proxy pool)` → the name is self-explanatory; the parenthesized translation is waste; use just `proxy-pool`.
+- Content descriptions: `opencli_sop(66-site CLI, reuses Chrome session)` → implementation details belong inside the SOP, not L1.
+- Intuitive capabilities: things you would obviously think of without a reminder → 0 benefit, wasted cost every turn.
+- Redundancy: rules already covered in L3, or fragments already present in other L1 lines.
+
+## Four Compression Principles
+
+1. **Self-explanatory names > descriptions**: When the SOP name can describe itself, don’t add comments in L1. Renaming often has higher ROI than changing L1.
+2. **Minimum description of existence sets**: For several similar entries that can be covered by one higher-level scenario, use the set name to encode existence of that ability rather than listing all subitems. For example, `QQ ops/Feishu ops/WeCom ops` → `IM ops: *_im_sop`; if child names are self-explanatory, list only names, don’t translate.
+3. **Each entry = scenario ↔ solution existence**: `Video understanding: yt-dlp subtitles`, `fofa(asset mapping)` — scenario name is the trigger, scheme name encodes existence. Parentheses should contain **only counterintuitive trigger terms**; non-counterintuitive text (translations/content/implementation details) is waste.
+4. **Layered placement**: entries with behavior rules or high-frequency, high-ROI rules go to top-level scenario lines, pure existence pointers go to L2/L3 flat lists.
+
+## Cleanup Process
+
+1. Read L1 line by line. Split by `|` into fragments and classify: existence pointers / RULES / translations / content description / implementation details / redundancy.
+2. Triage RULES first: for each, ask “Is this a high-ROI global rule, or a low-risk rule for a specific scenario?”
+   - High-ROI global → keep.
+   - Scenario-specific / low-risk → demote to L3 or delete.
+3. Then handle existence pointers: check whether each expresses **scenario ↔ solution existence**; scenario trigger words should be included **only** when counterintuitive; delete translations/content descriptions/implementation details.
+4. Check whether L3 filenames are self-explanatory. If renaming can solve discoverability, don’t add description to L1. Finally, ensure total L1 lines ≤ 30.
+
+## Red Line
+
+Memory edits are persistent injuries; errors compound every turn. L1 can only be patched at the word level; overwrites are forbidden.
+
+If something is misleading, promptly fix L1 or rename the memory entry.

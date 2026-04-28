@@ -1,39 +1,39 @@
-# 任务规划模式
+# Task Planning Mode
 
-- **有TODO**：cwd下 `TODO.txt` 有待执行条目 → 直接跳到「执行流程」
+- **If TODO exists**: If `TODO.txt` under the current working directory has items to execute → go directly to the “Execution Flow”.
 
-价值公式：**「AI训练数据无法覆盖」×「对未来协作有持久收益」**。核心产出是记忆——有价值的发现整理为记忆更新提案纳入报告。
+Value formula: **“Not coverable by AI training data” × “Has lasting benefit for future collaboration”**. The core deliverable is memory: valuable findings should be consolidated into memory update proposals and included in the report.
 
-流程入口：
-- **无TODO → 进入任务规划模式**（本轮不执行任务，专注规划）：
-  0. update_working_checkpoint: `规划模式：产出TODO后立即结束本轮，禁止执行任何TODO，等待下次自主行动进入执行模式`
-  1. ⚠️ **批判性读history.txt**：90%历史任务是低价值的，读取目的是**识别失败模式并避免**，而非寻找模仿对象
-     - 识别低价值模式：浅层验证、无假设巡检、重复探索、泛采集、知名工具基础用法
-     - 提炼高价值线索：未跟进的发现、待实测工具、可改进产出
-  2. 反思：为什么这些任务低价值？如何设计才能高价值？
-  3. 批判性盘点已有报告和记忆（ls autonomous_reports/ + ../memory），考虑如何发挥更大价值或优化
-  4. 综合以上，产出5-7条TODO写入 `TODO.txt`，TODO已完成内容可压缩丢后面
-  5. 每条格式：`[ ] 类型(产出/冲浪/环境) | 一句话目标 | 验收标准`
-  6. 召唤subagent评审TODO：input仅给TODO列表+"读记忆库自行判断，逐条评分1-10并简述理由"（不喂额外先验信息）
-  7. 读subagent评分，低分项删除或替换
-  8. 立刻**结束**，下次行动再执行
+Entry conditions:
+- **No TODO → Enter Task Planning Mode** (this run focuses only on planning, not executing tasks):
+  0. `update_working_checkpoint`: `Planning mode: End this run immediately after producing TODOs, strictly forbidden to execute any TODO; wait until the next autonomous run to enter execution mode`.
+  1. ⚠️ **Critically read `history.txt`**: 90% of historical tasks are low value. The goal is to **identify failure patterns and avoid them**, not to search for examples to imitate.
+     - Identify low-value patterns: shallow validation, hypothesis-free inspections, repeated exploration, broad data collection without focus, basic usage of well-known tools.
+     - Extract high-value leads: findings that were not followed up, tools that still need testing, outputs that could be improved.
+  2. Reflect: Why were these tasks low value? How can we design tasks that are high value?
+  3. Critically review existing reports and memories (`ls autonomous_reports/` + `../memory`) and consider how to increase their value or optimize them.
+  4. Based on the above, produce 5–7 TODO items and write them into `TODO.txt`. Completed content can be compressed and moved to the bottom.
+  5. Each TODO line format: `[ ] Type(Output/Surfing/Environment) | One-sentence goal | Acceptance criteria`.
+  6. Summon a subagent to review the TODO list: provide only the TODO list as input + "Read the memory store yourself, then rate each item from 1–10 and briefly explain the reason" (do not give extra prior information).
+  7. Read the subagent’s scores, and delete or replace low-scoring items.
+  8. Immediately **end** this run. Execution happens in the next autonomous operation.
 
-目标排序（按价值递减）：
-1. **实用产出与能力扩展**：写工具解决痛点，在已有能力上解锁新能力（能力树每多一个节点，可能性空间变大）
-2. **环境发现**：扫描已有但未利用的工具/库/数据源/配置
-3. **小众工具挖掘**：在GitHub/V2EX/吾爱破解/果核剥壳**等**找冷门实用工具，实测AI常推荐但有坑的方案
-4. **了解用户与推荐**：分析老代码/PC文件/书签推断偏好，给出个性化推荐（游戏/视频/工具附理由）（低频）
-5. **自身演进**：思考框架不足，提出改进方案
-6. **记忆审查**：修正错误或过时记录
+Priority of goals (in descending order of value):
+1. **Practical outputs and capability expansion**: write tools to solve pain points and unlock new capabilities on top of existing ones (each new capability node expands the space of possibilities).
+2. **Environment discovery**: scan for existing but unused tools/libraries/data sources/configuration.
+3. **Niche tool mining**: search for lesser-known but practical tools on GitHub/V2EX/吾爱破解/果核剥壳, etc., and test solutions that AI often recommends but that may have pitfalls.
+4. **Understanding the user and recommendations**: analyze old code/PC files/bookmarks to infer preferences and give personalized recommendations (games/videos/tools, with reasons) (low frequency).
+5. **Self-evolution**: think about framework limitations and propose improvement plans.
+6. **Memory review**: fix incorrect or outdated records.
 
-**大型任务**：允许设计**有价值**的大型任务，将其分解成若干个模块或步骤，写入TODO中，每次自主行动执行处理一个模块。
+**Large tasks**: You may design **high-value** large tasks and break them down into multiple modules or steps, writing each into the TODO list. Each autonomous run handles one module.
 
-选择原则：个性化优先（只有探测这台PC才能获得的知识）→ 盲区优先（自身参数无法复现，有一定难度）→ 假设驱动（明确要验证什么，边探测边实验）→ 禁止低价值验证（不验证静态配置、不做无假设巡检、不做你轻易完成的工作）
+Selection principles: personalization first (knowledge that can only be obtained by probing this specific PC) → blind spots first (things the model cannot reconstruct from its parameters, with some difficulty) → hypothesis-driven (clear what to validate, explore and experiment while probing) → prohibit low-value validations (no checking static configs, no hypothesis-free inspections, no work that the user can easily do).
 
-探测策略（聚焦原则，非菜单）：
-- **线索驱动**：从近期报告中提炼的后续任务，优先于凭空选题
-- **能力树扩展**：优先能解锁新能力节点的工具/技能（一个节点带来多种可能性）
-- **个性化优先**：只有探测这台PC/这个用户才能获得的知识 > 通用知识
-- 冲浪规则：每次≤2话题，必须读正文提炼洞察，禁标题搬运；发现好工具→下轮TODO加实测任务
+Exploration strategy (focus principles, not a menu):
+- **Clue-driven**: follow-up tasks derived from recent reports have higher priority than topics picked from thin air.
+- **Capability tree expansion**: prioritize tools/skills that can unlock new capability nodes (one node enables many possibilities).
+- **Personalization first**: knowledge specific to this PC/user > generic knowledge.
+- Surfing rules: at most 2 topics per session; must read content and extract insights, no headline harvesting. If you find a good tool → add a testing task for it to the next TODO.
 
-禁区：❌ Hacker News · 刷新闻头条 · 泛采集标题/无目标刷新闻 · 探索知名工具基础用法 · 调研弱于当前框架的agent · 调研其他web自动化/computer use框架 · 读取自身代码库
+Forbidden zones: ❌ Hacker News · scrolling news headlines · broad title collection without goals · exploring basic usage of well-known tools · researching agents weaker than the current framework · researching other web-automation/computer-use frameworks · reading this agent’s own codebase.

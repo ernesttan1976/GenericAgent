@@ -1,49 +1,50 @@
-# Skill Search — 105K 技能卡检索
+# Skill Search — 105K Skill Card Retrieval
 
-> 从 105K+ 技能卡中语义搜索最匹配的 skill。零依赖，内置默认 API 地址，开箱即用。
+> Perform semantic search over 105K+ skill cards to find the most relevant skill. Zero dependencies, built-in default API endpoint, ready to use out of the box.
 
-## 最简调用
+## Minimal Usage
 
 ```python
-import sys; sys.path.append('../memory/skill_search')
+import sys
+sys.path.append('../memory/skill_search')
 from skill_search import search
 
-results = search("python send email")  # ⚠️ 必须用英文查询，中文匹配效果极差
+results = search("python send email")  # ⚠️ Queries MUST be in English; Chinese works very poorly.
 for r in results:
     s = r.skill
     print(f"[{r.final_score:.2f}] {s.name} — {s.one_line_summary}")
     print(f"  key: {s.key}  category: {s.category}  tags: {s.tags[:3]}")
 ```
 
-## API 签名
+## API Signature
 
 ```python
 search(query, env=None, category=None, top_k=10) -> list[SearchResult]
-#  env: 自动检测，一般不传
-#  category: 可选过滤，如 "devops"
-#  top_k: 返回数量，默认10
+#  env: auto-detected in most cases, usually omit
+#  category: optional filter, e.g. "devops"
+#  top_k: number of results to return, default 10
 ```
 
-## 返回结构
+## Return Structure
 
 ```
 SearchResult
-  .final_score    float     综合评分 (0~1)
-  .relevance      float     语义相关度
-  .quality        float     质量分
-  .match_reasons  list[str] 匹配原因
-  .warnings       list[str] 警告
+  .final_score    float     Overall score (0–1)
+  .relevance      float     Semantic relevance
+  .quality        float     Quality score
+  .match_reasons  list[str] Reasons for the match
+  .warnings       list[str] Warnings
   .skill          SkillIndex ↓
 
-SkillIndex (常用字段)
-  .key              str       唯一标识/路径
-  .name             str       名称
-  .one_line_summary str       一句话摘要
-  .description      str       详细描述
-  .category         str       类别
-  .tags             list[str] 标签
-  .form             str       形式(sop/script/...)
-  .autonomous_safe  bool      是否自主安全
+SkillIndex (common fields)
+  .key              str       Unique identifier/path
+  .name             str       Name
+  .one_line_summary str       One-line summary
+  .description      str       Detailed description
+  .category         str       Category
+  .tags             list[str] Tags
+  .form             str       Form (sop/script/...)
+  .autonomous_safe  bool      Safe for autonomous use
 ```
 
 ## CLI
@@ -56,9 +57,9 @@ python -m skill_search --stats
 python -m skill_search --env
 ```
 
-## 配置
+## Configuration
 
-| 项 | 默认值 | 说明 |
-|---|---|---|
-| API地址 | `http://www.fudankw.cn:58787` | 环境变量 `SKILL_SEARCH_API` 可覆盖 |
-| API密钥 | 无(可选) | 环境变量 `SKILL_SEARCH_KEY` |
+| Item      | Default value                   | Description                                      |
+|----------|----------------------------------|--------------------------------------------------|
+| API URL  | `http://www.fudankw.cn:58787`    | Overridable via environment variable `SKILL_SEARCH_API` |
+| API Key  | none (optional)                  | Environment variable `SKILL_SEARCH_KEY`          |
