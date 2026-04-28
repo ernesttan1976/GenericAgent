@@ -931,42 +931,42 @@ class ChatPanel(QWidget):
 
         ly.addStretch()
 
-        # Minimize button
-        mini = QPushButton("\uE949")
-        mini.setFixedSize(26, 26)
+        # mac-style window control buttons (● ● ●)
+        close = QPushButton("●")
+        close.setFixedSize(14, 14)
+        close.setCursor(QCursor(Qt.PointingHandCursor))
+        close.setStyleSheet("""
+            QPushButton { background: #ef4444; color: transparent;
+                border: none; border-radius: 7px; }
+            QPushButton:hover { background: #dc2626; }
+        """)
+        close.clicked.connect(lambda: (self.close(), QApplication.instance().quit()))
+        ly.addWidget(close)
+        
+        mini = QPushButton("●")
+        mini.setFixedSize(14, 14)
         mini.setCursor(QCursor(Qt.PointingHandCursor))
         mini.setStyleSheet("""
-            QPushButton { background: rgba(63,63,70,0.6); color: #a1a1aa;
-                border: none; border-radius: 13px; font-family: "Segoe MDL2 Assets"; font-size: 9px; }
-            QPushButton:hover { background: rgba(63,63,70,0.9); color: white; }
+            QPushButton { background: #facc15; color: transparent;
+                border: none; border-radius: 7px; }
+            QPushButton:hover { background: #eab308; }
         """)
         mini.clicked.connect(self.hide)
         ly.addWidget(mini)
 
-        # Maximize button
-        maxi = QPushButton("\uE739")
-        maxi.setFixedSize(26, 26)
+        maxi = QPushButton("●")
+        maxi.setFixedSize(14, 14)
         maxi.setCursor(QCursor(Qt.PointingHandCursor))
         maxi.setStyleSheet("""
-            QPushButton { background: rgba(63,63,70,0.6); color: #a1a1aa;
-                border: none; border-radius: 13px; font-family: "Segoe MDL2 Assets"; font-size: 9px; }
-            QPushButton:hover { background: rgba(63,63,70,0.9); color: white; }
+            QPushButton { background: #22c55e; color: transparent;
+                border: none; border-radius: 7px; }
+            QPushButton:hover { background: #16a34a; }
         """)
         maxi.clicked.connect(self._toggle_maximize)
         self._maxi_btn = maxi
         ly.addWidget(maxi)
 
-        # Close button
-        close = QPushButton("\uE8BB")
-        close.setFixedSize(26, 26)
-        close.setCursor(QCursor(Qt.PointingHandCursor))
-        close.setStyleSheet("""
-            QPushButton { background: rgba(63,63,70,0.6); color: #a1a1aa;
-                border: none; border-radius: 13px; font-family: "Segoe MDL2 Assets"; font-size: 9px; }
-            QPushButton:hover { background: rgba(220,38,38,0.85); color: white; }
-        """)
-        close.clicked.connect(lambda: (self.close(), QApplication.instance().quit()))
-        ly.addWidget(close)
+        
 
         # Drag
         bar.mousePressEvent   = self._tb_press
