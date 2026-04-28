@@ -16,6 +16,8 @@ TASKS = os.path.join(_dir, '../sche_tasks')
 DONE  = os.path.join(_dir, '../sche_tasks/done')
 _LOG  = os.path.join(_dir, '../sche_tasks/scheduler.log')
 
+os.makedirs(TASKS, exist_ok=True)
+
 # --- 日志 ---
 _logger = logging.getLogger('scheduler')
 if not _logger.handlers:
